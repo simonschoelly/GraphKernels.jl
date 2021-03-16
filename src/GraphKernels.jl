@@ -3,14 +3,17 @@ module GraphKernels
 using LightGraphs
 using SimpleValueGraphs
 using SimpleValueGraphs: AbstractValGraph
-using LinearAlgebra: dot
+using LinearAlgebra: dot, diag
 using Statistics: mean, std
+using LIBSVM
+using Random: MersenneTwister, randperm
 
 import LIBSVM: svmtrain, svmpredict
 
 export
     BaselineGraphKernel,
     ShortestPathGraphKernel,
+    PyramidMatchGraphKernel,
 
     ConstVertexKernel,
     DiracVertexKernel,
