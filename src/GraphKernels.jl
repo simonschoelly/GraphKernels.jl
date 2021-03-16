@@ -24,8 +24,8 @@ export
     svmtrain,
     svmpredict
 
-include("graph_kernels.jl")
 include("vertex_kernels.jl")
+include("graph_kernels.jl")
 include("integrations/LIBSVM.jl")
 
 # ================================================================
@@ -37,22 +37,23 @@ include("integrations/LIBSVM.jl")
 
 Simple k-fold cross validation implementation for quick testing during development.
 """
-function k_fold_cross_validation(kernel::AbstractGraphKernel, graphs; n_folds=5, class_key=1)
+function k_fold_cross_validation(kernel::AbstractGraphKernel, graphs; k_folds=5, class_key=1, kwargs...)
 
     n = length(graphs)
+    indices = randperm(MersenneTwister(123), n)
 
     acc_train = Float64[]
     acc_valid = Float64[]
     # TODO there should be better partition function that
     # ensures that not only the last partition is smaller
-    for valid_indices in Iterators.partition(1:n, ceil(Int, n // n_folds))
-        train_x = [graphs[i] for i in 1:n if i ∉ valid_indices]
-        valid_x = [graphs[i] for i in valid_indices]
+    for valid_indices in Iterators.partition(1:n, ceil(Int, n // k_folds))
+        train_x = [graphs[indices[i]] for i in 1:n if i ∉ valid_indices]
+        valid_x = [graphs[indices[i]] for i in valid_indices]
 
         train_y = [get_graphval(g, class_key) for g in train_x]
         valid_y = [get_graphval(g, class_key) for g in valid_x]
 
-        model = svmtrain(train_x, train_y, kernel)
+        model = svmtrain(train_x, train_y, kernel; kwargs...)
 
         train_y_pred = svmpredict(model, train_x)
         valid_y_pred = svmpredict(model, valid_x)

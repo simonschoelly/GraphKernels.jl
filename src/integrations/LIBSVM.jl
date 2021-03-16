@@ -6,14 +6,14 @@ struct GraphSVMModel
 end
 
 
-function svmtrain(graphs::AbstractVector{<:AbstractGraph}, labels, kernel::AbstractGraphKernel)
+function svmtrain(graphs::AbstractVector{<:AbstractGraph}, labels, kernel::AbstractGraphKernel; kwargs...)
 
     n = length(graphs)
 
     X = vcat(transpose(1:n), gramm_matrix(kernel, graphs))
     println("Finished calculating gramm_matrix")
 
-    svm = svmtrain(X, labels, kernel=Kernel.Precomputed)
+    svm = svmtrain(X, labels, kernel=Kernel.Precomputed; kwargs...)
 
     return GraphSVMModel(svm, kernel, graphs)
 end
