@@ -184,3 +184,32 @@ function (kernel::PyramidMatchGraphKernel)(g1, g2)
                                   _I(hists1, hists2, d, l + 2)), 0:L-1)
 end
 
+# ================================================================
+#     NormalizeGraphKernel
+# ================================================================
+
+"""
+    NormalizeGraphKernel <: AbstractGraphKernel
+"""
+struct NormalizeGraphKernel{IK<:AbstractGraphKernel} <: AbstractGraphKernel
+
+    inner_kernel::IK
+end
+
+function (kernel::NormalizeGraphKernel)(g1, g2)
+
+    k_12 = kernel.inner_kernel(g1, g2)
+    k_11 = kernel.inner_kernel(g1, g1)
+    k_22 = kernel.inner_kernel(g2, g2)
+
+    return k_12 / sqrt(k_11 * k_22)
+end
+
+function gramm_matrix(kernel::NormalizeGraphKernel, graphs::AbstractVector{<:AbstractGraph})
+
+    G = gramm_matrix(kernel.inner_kernel, graphs)
+    d = diag(G)
+    # TODO compare/benchmark if a loop would not be more performant here
+    return G ./ sqrt.(d .* d')
+end
+

@@ -15,6 +15,8 @@ export
     ShortestPathGraphKernel,
     PyramidMatchGraphKernel,
 
+    NormalizeGraphKernel,
+
     ConstVertexKernel,
     DiracVertexKernel,
     DotVertexKernel,
