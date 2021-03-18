@@ -27,6 +27,43 @@ function gramm_matrix(kernel::AbstractGraphKernel, graphs::AbstractVector{<:Abst
     return G
 end
 
+"""
+    gramm_matrix_diag(kernel::AbstractGraphKernel, graphs)
+
+Calculate the diagonal of the gramm matrix of the kernel on graphs.
+"""
+function gramm_matrix_diag(kernel::AbstractGraphKernel, graphs)
+
+    n = length(graphs)
+    D = Vector{Float64}(undef, n)
+    Threads.@threads for i in 1:n
+        @inbounds D[i] = kernel(graphs[i], graphs[i])
+    end
+    return D
+end
+
+"""
+    pairwise_matrix(kernel::AbstractGraphKernel, graphs1, graphs2)
+
+Calculate a matrix of invoking the kernel on all pairs.
+Entry `(i, j)` of the resulting matrix contains `kernel(graphs1[i], graphs2[j]`.
+"""
+function pairwise_matrix(kernel::AbstractGraphKernel, graphs1, graphs2)
+
+    n_rows = length(graphs1)
+    n_cols = length(graphs2)
+
+    M = Matrix{Float64}(undef, n_rows, n_cols)
+
+    Threads.@threads for i in 1:n_rows
+        for j in 1:n_cols
+            @inbounds M[i, j] = kernel(graphs1[i], graphs2[j])
+        end
+    end
+
+    return M
+end
+
 # ================================================================
 #     BaselineGraphKernel
 # ================================================================
@@ -211,5 +248,14 @@ function gramm_matrix(kernel::NormalizeGraphKernel, graphs::AbstractVector{<:Abs
     d = diag(G)
     # TODO compare/benchmark if a loop would not be more performant here
     return G ./ sqrt.(d .* d')
+end
+
+function pairwise_matrix(kernel::NormalizeGraphKernel, graphs1, graphs2)
+
+    M = pairwise_matrix(kernel.inner_kernel, graphs1, graphs2)
+    diag1 = gramm_matrix_diag(kernel, graphs1)
+    diag2 = gramm_matrix_diag(kernel, graphs2)
+    # TODO compare/benchmark if a loop would not be more performant here
+    return M ./ sqrt.(diag1 .* diag2')
 end
 

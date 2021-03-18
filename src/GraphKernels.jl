@@ -22,6 +22,8 @@ export
     DotVertexKernel,
 
     gramm_matrix,
+    gramm_matrix_diag,
+    pairwise_matrix,
 
     k_fold_cross_validation,
 

@@ -28,10 +28,7 @@ function svmpredict(model::GraphSVMModel, unpredicted_graphs::AbstractVector{<:A
 
     X = Matrix{Float64}(undef, m + 1, n)
     X[1, :] = 1:n
-
-    for i in 1:m, j in 1:n
-        X[i+1, j] = kernel(graphs[i], unpredicted_graphs[j])
-    end
+    X[2:end, :] = pairwise_matrix(kernel, graphs, unpredicted_graphs)
 
     return svmpredict(model.svm, X)[1] # for simplicity return only the labels for now
 end
