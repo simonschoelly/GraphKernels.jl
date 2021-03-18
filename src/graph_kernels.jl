@@ -13,15 +13,19 @@ abstract type AbstractGraphKernel end
 Return a matrix of running the kernel on all pairs of graphs.
 
 """
-function gramm_matrix(kernel::AbstractGraphKernel, graphs::AbstractVector{<:AbstractGraph})
+function gramm_matrix(kernel::AbstractGraphKernel, graphs)
 
     n = length(graphs)
 
     G = Matrix{Float64}(undef, n, n)
-    for i in 1:n, j in i:n
-        v = kernel(graphs[i], graphs[j])
-        G[i, j] = v
-        G[j, i] = v
+    # TODO maybe we should make the matrix only symmetric afterwards
+    # so that we avoid false sharing when using multiple threads
+    Threads.@threads for i in 1:n
+        @inbounds for j in i:n
+            v = kernel(graphs[i], graphs[j])
+            G[i, j] = v
+            G[j, i] = v
+        end
     end
 
     return G
@@ -242,7 +246,7 @@ function (kernel::NormalizeGraphKernel)(g1, g2)
     return k_12 / sqrt(k_11 * k_22)
 end
 
-function gramm_matrix(kernel::NormalizeGraphKernel, graphs::AbstractVector{<:AbstractGraph})
+function gramm_matrix(kernel::NormalizeGraphKernel, graphs)
 
     G = gramm_matrix(kernel.inner_kernel, graphs)
     d = diag(G)
@@ -258,4 +262,5 @@ function pairwise_matrix(kernel::NormalizeGraphKernel, graphs1, graphs2)
     # TODO compare/benchmark if a loop would not be more performant here
     return M ./ sqrt.(diag1 .* diag2')
 end
+
 
