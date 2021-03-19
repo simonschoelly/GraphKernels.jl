@@ -8,6 +8,13 @@ using SparseArrays: SparseVector, sparsevec
 
 abstract type AbstractGraphKernel end
 
+preprocessed_form(::AbstractGraphKernel, g::AbstractGraph) = g
+
+function (kernel::AbstractGraphKernel)(g1, g2)
+
+    return apply_preprocessed(kernel, preprocessed_form(kernel, g1), preprocessed_form(kernel, g2))
+end
+
 """
     gramm_matrix(kernel, graphs)
 Return a matrix of running the kernel on all pairs of graphs.
@@ -17,12 +24,18 @@ function gramm_matrix(kernel::AbstractGraphKernel, graphs)
 
     n = length(graphs)
 
+    # TODO we should be able to avoid collecting the graphs
+    # but currently ThreadX cannot split them otherwise,
+    # maybe we should have a custom map function
+    pre = ThreadsX.map(g -> preprocessed_form(kernel, g), collect(graphs))
+    #pre = map(g -> preprocessed_form(kernel, g), collect(graphs))
+
     G = Matrix{Float64}(undef, n, n)
     # TODO maybe we should make the matrix only symmetric afterwards
     # so that we avoid false sharing when using multiple threads
     Threads.@threads for i in 1:n
         @inbounds for j in i:n
-            v = kernel(graphs[i], graphs[j])
+            v = apply_preprocessed(kernel, pre[i], pre[j])
             G[i, j] = v
             G[j, i] = v
         end
@@ -39,9 +52,11 @@ Calculate the diagonal of the gramm matrix of the kernel on graphs.
 function gramm_matrix_diag(kernel::AbstractGraphKernel, graphs)
 
     n = length(graphs)
+    pre = map(g -> preprocessed_form(kernel, g), graphs)
+
     D = Vector{Float64}(undef, n)
     Threads.@threads for i in 1:n
-        @inbounds D[i] = kernel(graphs[i], graphs[i])
+        @inbounds D[i] = apply_preprocessed(kernel, pre[i], pre[i])
     end
     return D
 end
@@ -59,9 +74,12 @@ function pairwise_matrix(kernel::AbstractGraphKernel, graphs1, graphs2)
 
     M = Matrix{Float64}(undef, n_rows, n_cols)
 
+    pre1 = map(g -> preprocessed_form(kernel, g), graphs1)
+    pre2 = map(g -> preprocessed_form(kernel, g), graphs2)
+
     Threads.@threads for i in 1:n_rows
         for j in 1:n_cols
-            @inbounds M[i, j] = kernel(graphs1[i], graphs2[j])
+            @inbounds M[i, j] = apply_preprocessed(kernel, pre1[i], pre2[j])
         end
     end
 
@@ -76,7 +94,7 @@ end
 # but even simpler in that we do not consider any metadata
 struct BaselineGraphKernel <: AbstractGraphKernel end
 
-function (::BaselineGraphKernel)(g1, g2)
+function apply_preprocessed(::BaselineGraphKernel, g1, g2)
 
     return exp(-(ne(g1) - ne(g2))^2 * (Float64(nv(g1)) - Float64(nv(g2)))^2 )
 end
@@ -96,44 +114,30 @@ function ShortestPathGraphKernel(;tol=0.0, vertex_kernel=ConstVertexKernel(1.0))
     return ShortestPathGraphKernel(tol, vertex_kernel)
 end
 
-function (kernel::ShortestPathGraphKernel)(g1, g2)
+function preprocessed_form(kernel::ShortestPathGraphKernel, g::AbstractGraph)
 
-    dists1 = _make_dists(g1)
-    dists2 = _make_dists(g2)
+    dists = _make_dists(g)
+
+    ds = map(t -> t.dist, dists)
+    us =  map(t -> t.u, dists)
+    vs =  map(t -> t.v, dists)
+
+    return (g=g, ds=ds, us=us, vs=vs)
+end
+
+function apply_preprocessed(kernel::ShortestPathGraphKernel, pre1, pre2)
+
+    g1, ds1, us1, vs1 = pre1
+    g2, ds2, us2, vs2 = pre2
 
     # TODO there might be some issues with unsigned types here
     ε = kernel.tol
-
-    # TODO this code runs much faster if we use this function barrier here -
-    # but is very unclear why
-    return _result1(dists1, dists2, g1, g2, kernel.vertex_kernel)
-end
-
-function _make_dists(g)
-
-    dists = floyd_warshall_shortest_paths(g).dists
-    verts = vertices(g)
-    tm = typemax(eltype(dists))
-    dists = [(dist=dists[u, v], u=u, v=v) for u in verts for v in verts if u != v && dists[u, v] != tm]
-    sort!(dists, by=t->t.dist)
-    return dists
-end
-
-function _result1(dists1, dists2, g1, g2, vertex_kernel)
-
-    ds1 = map(t -> t.dist, dists1)
-    ds2 = map(t -> t.dist, dists2)
-
-    us1 =  map(t -> t.u, dists1)
-    us2 =  map(t -> t.u, dists2)
-
-    vs1 =  map(t -> t.v, dists1)
-    vs2 =  map(t -> t.v, dists2)
+    vertex_kernel = kernel.vertex_kernel
 
     result = 0.0
 
-    len1 = length(dists1)
-    len2 = length(dists2)
+    len1 = length(ds1)
+    len2 = length(ds2)
 
     i2 = 1
     @inbounds for i1 in Base.OneTo(length(ds1))
@@ -150,6 +154,17 @@ function _result1(dists1, dists2, g1, g2, vertex_kernel)
     end
 
     return result
+
+end
+
+function _make_dists(g)
+
+    dists = floyd_warshall_shortest_paths(g).dists
+    verts = vertices(g)
+    tm = typemax(eltype(dists))
+    dists = [(dist=dists[u, v], u=u, v=v) for u in verts for v in verts if u != v && dists[u, v] != tm]
+    sort!(dists, by=t->t.dist)
+    return dists
 end
 
 # ================================================================
@@ -213,13 +228,17 @@ function _I(hists1, hists2, d, l)
     return sum(dd -> sum(min.(hists1[l, dd], hists2[l, dd])), 1:d)
 end
 
-function (kernel::PyramidMatchGraphKernel)(g1, g2)
+function preprocessed_form(kernel::PyramidMatchGraphKernel, g::AbstractGraph)
 
     d = kernel.d
     L = kernel.L
-    hists1 = _make_hists(g1, d, L)
-    hists2 = _make_hists(g2, d, L)
+    return _make_hists(g, d, L)
+end
 
+function apply_preprocessed(kernel::PyramidMatchGraphKernel, hists1, hists2)
+
+    d = kernel.d
+    L = kernel.L
     return _I(hists1, hists2, d, L + 1) +
         sum(l -> 1 / 2^(L - l) * (_I(hists1, hists2, d, l + 1) -
                                   _I(hists1, hists2, d, l + 2)), 0:L-1)
@@ -237,30 +256,22 @@ struct NormalizeGraphKernel{IK<:AbstractGraphKernel} <: AbstractGraphKernel
     inner_kernel::IK
 end
 
-function (kernel::NormalizeGraphKernel)(g1, g2)
+function preprocessed_form(kernel::NormalizeGraphKernel, g::AbstractGraph)
 
-    k_12 = kernel.inner_kernel(g1, g2)
-    k_11 = kernel.inner_kernel(g1, g1)
-    k_22 = kernel.inner_kernel(g2, g2)
+    inner = kernel.inner_kernel
+    pre_inner = preprocessed_form(inner, g)
+    k_ii = apply_preprocessed(inner, pre_inner, pre_inner)
+    return (k_ii, pre_inner)
+end
+
+function apply_preprocessed(kernel::NormalizeGraphKernel, pre1, pre2)
+
+    inner = kernel.inner_kernel
+    k_11, pre_inner1 = pre1
+    k_22, pre_inner2 = pre2
+
+    k_12 = apply_preprocessed(inner, pre_inner1, pre_inner2)
 
     return k_12 / sqrt(k_11 * k_22)
 end
-
-function gramm_matrix(kernel::NormalizeGraphKernel, graphs)
-
-    G = gramm_matrix(kernel.inner_kernel, graphs)
-    d = diag(G)
-    # TODO compare/benchmark if a loop would not be more performant here
-    return G ./ sqrt.(d .* d')
-end
-
-function pairwise_matrix(kernel::NormalizeGraphKernel, graphs1, graphs2)
-
-    M = pairwise_matrix(kernel.inner_kernel, graphs1, graphs2)
-    diag1 = gramm_matrix_diag(kernel, graphs1)
-    diag2 = gramm_matrix_diag(kernel, graphs2)
-    # TODO compare/benchmark if a loop would not be more performant here
-    return M ./ sqrt.(diag1 .* diag2')
-end
-
 

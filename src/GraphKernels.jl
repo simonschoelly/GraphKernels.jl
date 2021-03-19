@@ -7,6 +7,7 @@ using LinearAlgebra: dot, diag
 using Statistics: mean, std
 using LIBSVM
 using Random: MersenneTwister, randperm
+using ThreadsX
 
 import LIBSVM: svmtrain, svmpredict
 
