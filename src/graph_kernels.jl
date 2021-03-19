@@ -30,15 +30,17 @@ function gramm_matrix(kernel::AbstractGraphKernel, graphs)
     pre = ThreadsX.map(g -> preprocessed_form(kernel, g), collect(graphs))
     #pre = map(g -> preprocessed_form(kernel, g), collect(graphs))
 
-    G = Matrix{Float64}(undef, n, n)
     # TODO maybe we should make the matrix only symmetric afterwards
     # so that we avoid false sharing when using multiple threads
-    Threads.@threads for i in 1:n
-        @inbounds for j in i:n
-            v = apply_preprocessed(kernel, pre[i], pre[j])
-            G[i, j] = v
-            G[j, i] = v
-        end
+    # TODO create some triangle generator instead of allocating a vector
+    # TODO apparently ThreadsX can do load balancing so we should consider that here
+    G = Matrix{Float64}(undef, n, n)
+    indices = [(i, j) for i in 1:n for j in i:n]
+    Threads.@threads for idx in indices
+        i, j = idx
+        @inbounds v = apply_preprocessed(kernel, pre[i], pre[j])
+        @inbounds G[i, j] = v
+        @inbounds G[j, i] = v
     end
 
     return G
@@ -52,7 +54,7 @@ Calculate the diagonal of the gramm matrix of the kernel on graphs.
 function gramm_matrix_diag(kernel::AbstractGraphKernel, graphs)
 
     n = length(graphs)
-    pre = map(g -> preprocessed_form(kernel, g), graphs)
+    pre = ThreadsX.map(g -> preprocessed_form(kernel, g), collect(graphs))
 
     D = Vector{Float64}(undef, n)
     Threads.@threads for i in 1:n
@@ -74,8 +76,8 @@ function pairwise_matrix(kernel::AbstractGraphKernel, graphs1, graphs2)
 
     M = Matrix{Float64}(undef, n_rows, n_cols)
 
-    pre1 = map(g -> preprocessed_form(kernel, g), graphs1)
-    pre2 = map(g -> preprocessed_form(kernel, g), graphs2)
+    pre1 = ThreadsX.map(g -> preprocessed_form(kernel, g), collect(graphs1))
+    pre2 = ThreadsX.map(g -> preprocessed_form(kernel, g), collect(graphs2))
 
     Threads.@threads for i in 1:n_rows
         for j in 1:n_cols
