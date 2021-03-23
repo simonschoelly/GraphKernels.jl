@@ -16,11 +16,11 @@ function (kernel::AbstractGraphKernel)(g1, g2)
 end
 
 """
-    gramm_matrix(kernel, graphs)
+    kernelmatrix(kernel, graphs)
 Return a matrix of running the kernel on all pairs of graphs.
 
 """
-function gramm_matrix(kernel::AbstractGraphKernel, graphs)
+function kernelmatrix(kernel::AbstractGraphKernel, graphs)
 
     n = length(graphs)
 
@@ -34,6 +34,12 @@ function gramm_matrix(kernel::AbstractGraphKernel, graphs)
     # so that we avoid false sharing when using multiple threads
     # TODO create some triangle generator instead of allocating a vector
     # TODO apparently ThreadsX can do load balancing so we should consider that here
+
+    return f__(kernel, pre, n)
+end
+
+function f__(kernel, pre, n)
+
     G = Matrix{Float64}(undef, n, n)
     indices = [(i, j) for i in 1:n for j in i:n]
     Threads.@threads for idx in indices
@@ -47,11 +53,11 @@ function gramm_matrix(kernel::AbstractGraphKernel, graphs)
 end
 
 """
-    gramm_matrix_diag(kernel::AbstractGraphKernel, graphs)
+    kernelmatrix_diag(kernel::AbstractGraphKernel, graphs)
 
 Calculate the diagonal of the gramm matrix of the kernel on graphs.
 """
-function gramm_matrix_diag(kernel::AbstractGraphKernel, graphs)
+function kernelmatrix_diag(kernel::AbstractGraphKernel, graphs)
 
     n = length(graphs)
     pre = ThreadsX.map(g -> preprocessed_form(kernel, g), collect(graphs))
@@ -64,12 +70,12 @@ function gramm_matrix_diag(kernel::AbstractGraphKernel, graphs)
 end
 
 """
-    pairwise_matrix(kernel::AbstractGraphKernel, graphs1, graphs2)
+    kernelmatrix(kernel::AbstractGraphKernel, graphs1, graphs2)
 
 Calculate a matrix of invoking the kernel on all pairs.
 Entry `(i, j)` of the resulting matrix contains `kernel(graphs1[i], graphs2[j]`.
 """
-function pairwise_matrix(kernel::AbstractGraphKernel, graphs1, graphs2)
+function kernelmatrix(kernel::AbstractGraphKernel, graphs1, graphs2)
 
     n_rows = length(graphs1)
     n_cols = length(graphs2)

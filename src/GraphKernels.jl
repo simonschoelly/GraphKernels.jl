@@ -22,9 +22,8 @@ export
     DiracVertexKernel,
     DotVertexKernel,
 
-    gramm_matrix,
-    gramm_matrix_diag,
-    pairwise_matrix,
+    kernelmatrix,
+    kernelmatrix_diag,
 
     k_fold_cross_validation,
 

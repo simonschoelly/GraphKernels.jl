@@ -10,8 +10,8 @@ function svmtrain(graphs::AbstractVector{<:AbstractGraph}, labels, kernel::Abstr
 
     n = length(graphs)
 
-    X = vcat(transpose(1:n), gramm_matrix(kernel, graphs))
-    println("Finished calculating gramm_matrix")
+    X = vcat(transpose(1:n), kernelmatrix(kernel, graphs))
+    println("Finished calculating kernelmatrix")
 
     svm = svmtrain(X, labels, kernel=Kernel.Precomputed; kwargs...)
 
@@ -28,7 +28,7 @@ function svmpredict(model::GraphSVMModel, unpredicted_graphs::AbstractVector{<:A
 
     X = Matrix{Float64}(undef, m + 1, n)
     X[1, :] = 1:n
-    X[2:end, :] = pairwise_matrix(kernel, graphs, unpredicted_graphs)
+    X[2:end, :] = kernelmatrix(kernel, graphs, unpredicted_graphs)
 
     return svmpredict(model.svm, X)[1] # for simplicity return only the labels for now
 end
