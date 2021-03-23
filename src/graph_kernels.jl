@@ -164,9 +164,9 @@ function _make_dists(g)
     dists = floyd_warshall_shortest_paths(g).dists
     verts = vertices(g)
     tm = typemax(eltype(dists))
-    dists = [(dist=dists[u, v], u=u, v=v) for u in verts for v in verts if u != v && dists[u, v] != tm]
-    sort!(dists, by=t->t.dist)
-    return dists
+    dists_list = [(dist=dists[u, v], u=u, v=v) for u in verts for v in verts if u != v && dists[u, v] != tm]
+    sort!(dists_list, by=t->t.dist)
+    return dists_list
 end
 
 # ================================================================
