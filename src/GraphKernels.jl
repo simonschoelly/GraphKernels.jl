@@ -15,6 +15,7 @@ export
     BaselineGraphKernel,
     ShortestPathGraphKernel,
     PyramidMatchGraphKernel,
+    WeisfeilerLehmanGraphKernel,
 
     NormalizeGraphKernel,
 
@@ -31,6 +32,7 @@ export
     svmtrain,
     svmpredict
 
+include("replacedvertexvals.jl")
 include("vertex_kernels.jl")
 include("graph_kernels.jl")
 include("integrations/LIBSVM.jl")
