@@ -111,20 +111,42 @@ end
 #     ShortestPathGraphKernel
 # ================================================================
 
+
+"""
+    ShortestPathGraphKernel <: AbstractGraphKernel
+
+A graph kernel that compares two graphs `g` and `g'` by comparing all pairs
+of vertices `(u, v)` of the `g` and `(u', v')` of `g'` if their shortest distance
+is smaller than `tol`. In that case, the vertices `u` and `u'`, as well as `v`, `v'` are
+compared with `vertex_kernel`.
+
+# Keywords
+- `tol=0.0`: Only pairs of vertices where the shortest distance is at most `tol` are
+    compared.
+- `dist_key=:`: The key for the edge values to compute the shortest distance with. Can be either
+    an `Integer` or a `Symbol` for a key to a specific edge value, `nothing` to use a default distance
+    of `1` for each edge, or `:` in which case the default edge weight for that graph type
+    is used.
+- `vertex_kernel=ConstVertexKernel(1.0)`: The kernel used to compare two vertices.
+
+# References
+[Borgwardt, K. M., & Kriegel, H. P.: Shortest-path kernels on graphs](https://www.dbs.ifi.lmu.de/~borgward/papers/BorKri05.pdf)
+"""
 struct ShortestPathGraphKernel{VK <: AbstractVertexKernel} <: AbstractGraphKernel
 
     tol::Float64
     vertex_kernel::VK
+    dist_key::Union{Int, Symbol, Colon, Nothing}
 end
 
-function ShortestPathGraphKernel(;tol=0.0, vertex_kernel=ConstVertexKernel(1.0))
+function ShortestPathGraphKernel(;tol=0.0, vertex_kernel=ConstVertexKernel(1.0), dist_key=Colon())
 
-    return ShortestPathGraphKernel(tol, vertex_kernel)
+    return ShortestPathGraphKernel(tol, vertex_kernel, dist_key)
 end
 
 function preprocessed_form(kernel::ShortestPathGraphKernel, g::AbstractGraph)
 
-    dists = _make_dists(g)
+    dists = _make_dists(g, kernel.dist_key)
 
     ds = map(t -> t.dist, dists)
     us =  map(t -> t.u, dists)
@@ -147,6 +169,7 @@ function apply_preprocessed(kernel::ShortestPathGraphKernel, pre1, pre2)
     len1 = length(ds1)
     len2 = length(ds2)
 
+    # TODO we are not using tol here at the moment
     i2 = 1
     @inbounds for i1 in Base.OneTo(length(ds1))
         d1 = ds1[i1]
@@ -165,9 +188,16 @@ function apply_preprocessed(kernel::ShortestPathGraphKernel, pre1, pre2)
 
 end
 
-function _make_dists(g)
+function _make_dists(g, dist_key)
 
-    dists = floyd_warshall_shortest_paths(g).dists
+    dists = if dist_key === Colon()
+        floyd_warshall_shortest_paths(g).dists
+    elseif dist_key === nothing
+        floyd_warshall_shortest_paths(g, LightGraphs.DefaultDistance(nv(g))).dists
+    else
+        floyd_warshall_shortest_paths(g, weights(g, dist_key)).dists
+    end
+
     verts = vertices(g)
     tm = typemax(eltype(dists))
     dists_list = [(dist=dists[u, v], u=u, v=v) for u in verts for v in verts if u != v && dists[u, v] != tm]
