@@ -169,15 +169,14 @@ function apply_preprocessed(kernel::ShortestPathGraphKernel, pre1, pre2)
     len1 = length(ds1)
     len2 = length(ds2)
 
-    # TODO we are not using tol here at the moment
     i2 = 1
     @inbounds for i1 in Base.OneTo(length(ds1))
         d1 = ds1[i1]
-        while i2 <= len2 && d1 > ds2[i2]
+        while i2 <= len2 && d1 > (ds2[i2] + ε)
             i2 += 1
         end
         j2 = i2
-        while j2 <= len2 &&  ds2[j2] <= d1
+        while j2 <= len2 && ds2[j2] <= (d1 + ε)
             result += vertex_kernel(g1, us1[i1], g2, us2[j2])
             result += vertex_kernel(g1, vs1[i1], g2, vs2[j2])
             j2 += 1
