@@ -3,7 +3,7 @@
 ![](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
 
 A Julia package for calculating [graph kernels](https://en.wikipedia.org/wiki/Graph_kernel) -
-kernel function where the inputs are graphs.
+kernel functions where the inputs are graphs.
 
 ### Example
 
