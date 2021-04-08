@@ -11,7 +11,6 @@ function svmtrain(graphs::AbstractVector{<:AbstractGraph}, labels, kernel::Abstr
     n = length(graphs)
 
     X = vcat(transpose(1:n), kernelmatrix(kernel, graphs))
-    println("Finished calculating kernelmatrix")
 
     svm = svmtrain(X, labels, kernel=Kernel.Precomputed; kwargs...)
 
