@@ -39,7 +39,6 @@ include("graph-kernels/baseline-graph-kernel.jl")
 include("graph-kernels/normalize-graph-kernel.jl")
 include("graph-kernels/pyramid-match-graph-kernel.jl")
 include("graph-kernels/shortest-path-graph-kernel.jl")
-include("graph_kernels.jl")
 include("integrations/LIBSVM.jl")
 
 # ================================================================
