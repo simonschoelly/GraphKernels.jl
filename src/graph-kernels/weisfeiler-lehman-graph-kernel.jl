@@ -1,17 +1,22 @@
 
 """
-    WeisfeilerLehmanGraphKernel <: AbstractGraphKernel
+    WeisfeilerLehmanGraphKernel(;base_kernel, num_iterations=5) <: AbstractGraphKernel
 """
 struct WeisfeilerLehmanGraphKernel{BK<:AbstractGraphKernel} <: AbstractGraphKernel
 
     base_kernel::BK
     num_iterations::Int
+
+    function WeisfeilerLehmanGraphKernel(base_kernel::AbstractGraphKernel, num_iterations::Integer)
+
+        num_iterations >= 1 || throw(DomainError(num_iterations, "num_iterations must be >= 1"))
+        return new{typeof(base_kernel)}(base_kernel, num_iterations)
+    end
 end
 
-function WeisfeilerLehmanGraphKernel(;base_kernel, num_iterations::Integer=5)
+function WeisfeilerLehmanGraphKernel(;base_kernel::AbstractGraphKernel, num_iterations::Integer=5)
 
-    @assert num_iterations >= 1 # TODO proper error handling
-    return WeisfeilerLehmanGraphKernel(base_kernel, Int(num_iterations))
+    return WeisfeilerLehmanGraphKernel(base_kernel, num_iterations)
 end
 
 function preprocessed_form(kernel::WeisfeilerLehmanGraphKernel, g::AbstractGraph)
