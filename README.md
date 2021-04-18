@@ -36,7 +36,7 @@ ShortestPathGraphKernel{ConstVertexKernel}(0.0, ConstVertexKernel(1.0), nothing)
 # train a support vector machine with that kernel
 julia> model = svmtrain(X_train, y_train, kernel);
 
-# predict classed on the test data
+# predict classe on the test data
 julia> y_test_pred = svmpredict(model, X_test);
 
 # compare with the actual classes and calculate the accuracy
@@ -57,7 +57,7 @@ julia> accuracy = mean(y_test .== y_test_pred)
 
 ### Julia
 
-- [GeometricFlux](Geometric Deep Learning for Flux ), Geometric Deep Learning for Flux 
+- [GeometricFlux](https://github.com/FluxML/GeometricFlux.jl), Geometric Deep Learning for Flux 
 
 ### Python
 
