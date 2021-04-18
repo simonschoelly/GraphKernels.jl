@@ -14,7 +14,7 @@ import LIBSVM: svmtrain, svmpredict
 export
     AbstractGraphKernel,
 
-    BaselineGraphKernel,
+    NoGraphBaselineGraphKernel,
     ShortestPathGraphKernel,
     PyramidMatchGraphKernel,
     WeisfeilerLehmanGraphKernel,
@@ -34,6 +34,7 @@ export
     svmtrain,
     svmpredict
 
+include("utils.jl")
 include("replacedvertexvals.jl")
 include("vertex_kernels.jl")
 include("graph-kernels/abstract-graph-kernel.jl")
