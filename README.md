@@ -43,3 +43,26 @@ julia> y_test_pred = svmpredict(model, X_test);
 julia> accuracy = mean(y_test .== y_test_pred)
 0.8529411764705882
 ```
+
+# Alternatives
+
+## Graph Kernels
+
+### Python
+
+- [GraKeL](https://github.com/ysig/GraKeL), A scikit-learn compatible library for graph kernels 
+- [graphkit-learn](https://github.com/jajupmochi/graphkit-learn), A Python package for graph kernels, graph edit distances and graph pre-image problem.
+
+## General graph machine learning
+
+### Julia
+
+- [GeometricFlux](Geometric Deep Learning for Flux ), Geometric Deep Learning for Flux 
+
+### Python
+
+- [StellarGraph](https://github.com/stellargraph/stellargraph), Machine Learning on Graphs 
+- [DGL](https://github.com/dmlc/dgl), Python package built to ease deep learning on graph, on top of existing DL frameworks. 
+- [Graph Nets](https://github.com/deepmind/graph_nets), Build Graph Nets in Tensorflow 
+- [Spektral](https://github.com/danielegrattarola/spektral/), Graph Neural Networks with Keras and Tensorflow 2. 
+- [PyTorch Geometric](https://github.com/rusty1s/pytorch_geometric), Geometric Deep Learning Extension Library for PyTorch 
