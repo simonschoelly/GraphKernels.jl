@@ -1,7 +1,6 @@
 
 using DataStructures: counter, inc!
 
-const LabelsType = Union{Auto, Colon, Tuple{Vararg{Int}}, Tuple{Vararg{Symbol}}}
 
 """
     NoGraphBaselineGraphKernel(;vertex_labels=Auto(), edge_labels=Auto(), gamma=0.5)
@@ -71,20 +70,6 @@ function preprocessed_form(kernel::NoGraphBaselineGraphKernel, g::AbstractValGra
     return (vertex_class_sizes=vertex_class_sizes, edge_class_sizes=edge_class_sizes)
 end
 
-_labels(::Colon, types) = fieldnames(types)
-
-function _is_suitable_label_type(T)
-
-    return T <: Union{Integer, AbstractString, AbstractChar, Symbol}
-end
-
-function _labels(::Auto, types)
-
-    return filter(i -> _is_suitable_label_type(fieldtype(types, i)), fieldnames(types))
-end
-
-# TODO we could actually verify that the keys are valid
-_labels(keys::Tuple, types) = keys
 
 function apply_preprocessed(kernel::NoGraphBaselineGraphKernel, sizes1, sizes2)
 
