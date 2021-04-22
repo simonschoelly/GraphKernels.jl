@@ -51,7 +51,7 @@ function apply_preprocessed(kernel::PyramidMatchGraphKernel, points1, points2)
     # TODO add @inbounds
     hist_intersect[1] = d * min(n1, n2)
     for l in 1:L
-        cell_boundaries = range(-1.0, 1.0, length=2^l + 1)
+        cell_boundaries = range(0.0, 1.0, length=2^l + 1)
         for j in 1:d
             i1 = 1
             i2 = 1
@@ -99,14 +99,11 @@ end
 
 function _embedding(g::AbstractGraph, embedding_dim::Int)
 
-    n = nv(g)
-    A = zeros(max(embedding_dim, n), max(embedding_dim, n))
-    A[1:n, 1:n] = adjacency_matrix(g)
-    # TODO should we scale?
-    embedding = eigvecs(A; sortby=x -> -abs(x))[:, 1:embedding_dim]
+    evs = eigvecs(adjacency_matrix(g); sortby=x -> -abs(x))
+    embedding = abs.(@view evs[:, 1:min(size(evs, 2), embedding_dim)])
     # theoretically clamping is not necessary, this is just a precaution
     # against rounding errors. Clamping to prevfloat(-1.0) should make some calculations easier
-    clamp!(embedding, -1.0, prevfloat(1.0))
+    clamp!(embedding, 0.0, prevfloat(1.0))
     return embedding
 end
 
