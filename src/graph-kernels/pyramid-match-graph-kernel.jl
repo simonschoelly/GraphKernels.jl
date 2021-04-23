@@ -38,6 +38,8 @@ end
 
 function apply_preprocessed(kernel::PyramidMatchGraphKernel, points1, points2)
 
+    # TODO the embedding dim might actually be smaller for some graph
+    # we should maybe consider some kind of scaling in such a case
     d = min(size(points1, 2), size(points2, 2))
     L = kernel.histogram_levels
     n1 = size(points1, 1)
