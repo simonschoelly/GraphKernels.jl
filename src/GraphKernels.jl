@@ -11,6 +11,9 @@ using ThreadsX
 
 import LIBSVM: svmtrain, svmpredict
 
+using KernelFunctions: kernelmatrix, kernelmatrix_diag
+import KernelFunctions
+
 export
     AbstractGraphKernel,
 
@@ -19,16 +22,15 @@ export
     PyramidMatchGraphKernel,
     WeisfeilerLehmanGraphKernel,
 
-    NormalizeGraphKernel,
-
     ConstVertexKernel,
     DiracVertexKernel,
     DotVertexKernel,
 
+    k_fold_cross_validation,
+
+    # reexport from KernelFunctions
     kernelmatrix,
     kernelmatrix_diag,
-
-    k_fold_cross_validation,
 
     # overridden methods from LIBSVM
     svmtrain,
@@ -39,7 +41,6 @@ include("replacedvertexvals.jl")
 include("vertex_kernels.jl")
 include("graph-kernels/abstract-graph-kernel.jl")
 include("graph-kernels/baseline-graph-kernel.jl")
-include("graph-kernels/normalize-graph-kernel.jl")
 include("graph-kernels/pyramid-match-graph-kernel.jl")
 include("graph-kernels/shortest-path-graph-kernel.jl")
 include("graph-kernels/weisfeiler-lehman-graph-kernel.jl")

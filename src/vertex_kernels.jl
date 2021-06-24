@@ -4,10 +4,12 @@
 #     AbstractVertexKernel
 # ================================================================
 
-abstract type AbstractVertexKernel end
+abstract type AbstractVertexKernel <: KernelFunctions.Kernel end
 
-function (kernel::AbstractVertexKernel)((g1, v1), (g2, v2))
+function (kernel::AbstractVertexKernel)(gv1::Tuple{AbstractGraph, Integer}, gv2::Tuple{AbstractGraph, Integer})
 
+    (g1, v1) = gv1
+    (g2, v2) = gv2
     return kernel(g1, v1, g2, v2)
 end
 
