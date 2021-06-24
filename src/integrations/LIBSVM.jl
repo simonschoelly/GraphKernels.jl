@@ -1,17 +1,14 @@
 
 struct GraphSVMModel
     svm::LIBSVM.SVM
-    kernel::AbstractGraphKernel
+    kernel::KernelFunctions.Kernel
     graphs::AbstractVector
 end
 
 
-function svmtrain(graphs::AbstractVector{<:AbstractGraph}, labels, kernel::AbstractGraphKernel; kwargs...)
+function svmtrain(graphs::AbstractVector{<:AbstractGraph}, labels, kernel::KernelFunctions.Kernel; kwargs...)
 
-    n = length(graphs)
-
-    X = vcat(transpose(1:n), kernelmatrix(kernel, graphs))
-
+    X = kernelmatrix(kernel, graphs)
     svm = svmtrain(X, labels, kernel=Kernel.Precomputed; kwargs...)
 
     return GraphSVMModel(svm, kernel, graphs)
@@ -22,12 +19,7 @@ function svmpredict(model::GraphSVMModel, unpredicted_graphs::AbstractVector{<:A
     graphs = model.graphs
     kernel = model.kernel
 
-    m = length(graphs)
-    n = length(unpredicted_graphs)
-
-    X = Matrix{Float64}(undef, m + 1, n)
-    X[1, :] = 1:n
-    X[2:end, :] = kernelmatrix(kernel, graphs, unpredicted_graphs)
-
+    # TODO might only be necessary to do the calculations for support vectors
+    X = kernelmatrix(kernel, graphs, unpredicted_graphs)
     return svmpredict(model.svm, X)[1] # for simplicity return only the labels for now
 end
