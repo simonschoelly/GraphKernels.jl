@@ -55,7 +55,7 @@ include("integrations/LIBSVM.jl")
 
 Simple k-fold cross validation implementation for quick testing during development.
 """
-function k_fold_cross_validation(kernel::AbstractGraphKernel, graphs; k_folds=5, class_key=1, kwargs...)
+function k_fold_cross_validation(kernel::KernelFunctions.Kernel, graphs::AbstractVector{<:AbstractGraph}; k_folds=5, class_key=1, kwargs...)
 
     n = length(graphs)
     indices = randperm(MersenneTwister(123), n)
