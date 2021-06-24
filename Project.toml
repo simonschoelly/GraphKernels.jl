@@ -1,7 +1,7 @@
 name = "GraphKernels"
 uuid = "fe1457df-6c84-4629-916f-b550d5f6a5bb"
 authors = ["Simon Schoelly <sischoel@gmail.com> and contributors"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
