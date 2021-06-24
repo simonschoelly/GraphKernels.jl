@@ -3,7 +3,7 @@
 # ================================================================
 
 """
-    abstract type AbstractGraphKernel
+    abstract type AbstractGraphKernel <: KernelFunctions.Kernel
 
 A kernel function between two graphs.
 
@@ -17,10 +17,10 @@ that transforms a single graph into a suitable representation and `apply_preproc
 takes the representations for both graphs and calculates the kernel function.
 
 ### See also
-[`preprocessed_form`](@ref), [`apply_preprocessed`](@ref), [`kernel_matrix`](@ref), [`kernel_matrix_diag`](@ref)
+[`preprocessed_form`](@ref), [`apply_preprocessed`](@ref), [`KernelFunctions.Kernel`](@ref), [`kernel_matrix`](@ref), [`kernel_matrix_diag`](@ref)
 
 """
-abstract type AbstractGraphKernel end
+abstract type AbstractGraphKernel <: KernelFunctions.Kernel end
 
 """
     preprocessed_form(k::AbstractGraphKernel, g::AbstractGraph) = g
@@ -39,7 +39,7 @@ method.
 """
 preprocessed_form(::AbstractGraphKernel, g::AbstractGraph) = g
 
-function (kernel::AbstractGraphKernel)(g1, g2)
+function (kernel::AbstractGraphKernel)(g1::AbstractGraph, g2::AbstractGraph)
 
     return apply_preprocessed(kernel, preprocessed_form(kernel, g1), preprocessed_form(kernel, g2))
 end
@@ -52,7 +52,7 @@ function _map_preprocessed_form(kernel::AbstractGraphKernel, graphs)
 
     # TODO we should be able to avoid collecting the graphs
     # but currently ThreadX cannot split them otherwise,
-    # maybe we can create some wrapper type that is splitable around graphs
+    # maybe we can create some wrapper type that is splittable around graphs
     return ThreadsX.map(g -> preprocessed_form(kernel, g), collect(graphs))
 end
 
@@ -63,7 +63,7 @@ Return a matrix of running the kernel on all pairs of graphs.
 ### See also
 [`kernelmatrix_diag`](@ref)
 """
-function kernelmatrix(kernel::AbstractGraphKernel, graphs)
+function KernelFunctions.kernelmatrix(kernel::AbstractGraphKernel, graphs::AbstractVector)
 
     pre = _map_preprocessed_form(kernel, graphs)
 
@@ -92,15 +92,7 @@ function _kernelmatrix_from_preprocessed(kernel, pre)
     return G
 end
 
-"""
-    kernelmatrix_diag(kernel::AbstractGraphKernel, graphs)
-
-Calculate the diagonal of the kernelmatrix matrix of the graphs.
-
-### See also
-[`kernelmatrix`](@ref)
-"""
-function kernelmatrix_diag(kernel::AbstractGraphKernel, graphs)
+function KernelFunctions.kernelmatrix_diag(kernel::AbstractGraphKernel, graphs::AbstractVector)
 
     n = length(graphs)
     pre = _map_preprocessed_form(kernel, graphs)
@@ -112,13 +104,8 @@ function kernelmatrix_diag(kernel::AbstractGraphKernel, graphs)
     return D
 end
 
-"""
-    kernelmatrix(kernel::AbstractGraphKernel, graphs1, graphs2)
 
-Calculate a matrix of invoking the kernel on all pairs.
-Entry `(i, j)` of the resulting matrix contains `kernel(graphs1[i], graphs2[j]`.
-"""
-function kernelmatrix(kernel::AbstractGraphKernel, graphs1, graphs2)
+function KernelFunctions.kernelmatrix(kernel::AbstractGraphKernel, graphs1::AbstractVector, graphs2::AbstractVector)
 
     n_rows = length(graphs1)
     n_cols = length(graphs2)
