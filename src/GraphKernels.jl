@@ -1,6 +1,6 @@
 module GraphKernels
 
-using LightGraphs
+using Graphs
 using SimpleValueGraphs
 using SimpleValueGraphs: AbstractValGraph
 using LinearAlgebra: dot, diag
