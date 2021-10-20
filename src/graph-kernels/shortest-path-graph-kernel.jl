@@ -83,7 +83,7 @@ function _make_dists(g, dist_key)
     dists = if dist_key === Colon()
         floyd_warshall_shortest_paths(g).dists
     elseif dist_key === nothing
-        floyd_warshall_shortest_paths(g, LightGraphs.DefaultDistance(nv(g))).dists
+        floyd_warshall_shortest_paths(g, Graphs.DefaultDistance(nv(g))).dists
     else
         floyd_warshall_shortest_paths(g, weights(g, dist_key)).dists
     end
